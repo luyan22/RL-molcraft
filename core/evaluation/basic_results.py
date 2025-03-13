@@ -2,7 +2,7 @@ import numpy as np
 
 
 class BasicResults:
-    def __init__(self, name, full_name, results: list[dict]=None):
+    def __init__(self, name, full_name, results=None): # results: list[dict]
         self.name = name
         self.full_name = full_name
         self.results = results

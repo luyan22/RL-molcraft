@@ -277,7 +277,7 @@ class UniTransformerO2TwoUpdateGeneral(nn.Module):
     def _connect_edge(self, x, mask_ligand, batch):
         if self.cutoff_mode == 'radius':
             edge_index = radius_graph(x, r=self.r, batch=batch, flow='source_to_target')
-        elif self.cutoff_mode == 'knn':
+        elif self.cutoff_mode == 'knn': # default config
             edge_index = knn_graph(x, k=self.knn, batch=batch, flow='source_to_target')
         elif self.cutoff_mode == 'hybrid':
             edge_index = batch_hybrid_edge_connection(

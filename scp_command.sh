@@ -1,5 +1,6 @@
 # 09
 scp -r ../MOLCRAFT luyan@[240e:918:8003:900::109]:/mnt/nfs-ssd/data/luyan
+scp -r 
 
 #password: luyan123
 

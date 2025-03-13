@@ -108,7 +108,7 @@ train:
 
 evaluation:
   ckpt_path: !SUB ${ckpt_path}
-  batch_size: 100
+  batch_size: 1
   sample_steps: !SUB ${sample_steps}
   num_samples: !SUB ${num_samples}  # x-% test
   sample_num_atoms: !SUB ${sample_num_atoms}  # ['prior', 'ref']

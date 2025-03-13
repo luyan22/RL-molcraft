@@ -80,7 +80,9 @@ class BFNBase(nn.Module):
 
     def discrete_var_bayesian_update(self, t, beta1, x, K):
         """
+        Add noise to the one-hot vector x
         x: [N, K]
+        beta1 = 1.5 in default config
         """
         # Eq.(182): β(t) = t**2 β(1)
         beta = beta1 * (t**2)  # (B,)
@@ -94,6 +96,7 @@ class BFNBase(nn.Module):
         eps = torch.randn_like(mean)
         y = mean + std * eps
         theta = F.softmax(y, dim=-1)
+        assert theta.shape == x.shape
         return theta
 
     def discreteised_var_bayesian_update(self, t, sigma1, x):

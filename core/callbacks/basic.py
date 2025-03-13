@@ -372,11 +372,11 @@ class EMACallback(pl.Callback):
         self,
         trainer: "pl.Trainer",
         pl_module: "pl.LightningModule",
-        checkpoint: Dict[str, Any],
+        checkpoint, # : Dict[str, Any]
     ) -> None:
         checkpoint["ema_state_dict"] = self.ema_state_dict
         checkpoint["_ema_state_dict_ready"] = self._ema_state_dict_ready
-        # return {"ema_state_dict": self.ema_state_dict, "_ema_state_dict_ready": self._ema_state_dict_ready}
+        return {"ema_state_dict": self.ema_state_dict, "_ema_state_dict_ready": self._ema_state_dict_ready} # luyan delete the annotation
 
     @overrides
     def on_load_checkpoint(

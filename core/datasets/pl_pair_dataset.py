@@ -65,7 +65,6 @@ class DBReader:
     
 
 class PocketLigandPairDataset(Dataset):
-
     def __init__(self, raw_path, transform=None, version='final'):
         super().__init__()
         self.raw_path = raw_path.rstrip('/')

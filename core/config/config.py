@@ -29,6 +29,7 @@ class Struct:
 
 class Config:
     def __init__(self, config_file, **kwargs):
+        print("config_file: ", config_file)
         _config = parse_config(path=config_file, subs_dict=kwargs)
         for key, value in _config.items():
             if isinstance(value, dict):

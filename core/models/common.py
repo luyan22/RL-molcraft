@@ -118,13 +118,20 @@ def get_r_feat(r, r_exp_func, node_type=None, edge_index=None, mode='basic'):
 
 
 def compose_context(h_protein, h_ligand, pos_protein, pos_ligand, batch_protein, batch_ligand):
+    '''
+    return:
+        h_ctx: (N_protein+N_ligand, hidden_dim)
+        pos_ctx: (N_protein+N_ligand, 3)
+        batch_ctx: (N_protein+N_ligand) molecular id for each atom(protein and ligand)
+        mask_ligand: (N_ligand) 1 for ligand atoms, 0 for protein atoms
+    '''
     # previous version has problems when ligand atom types are fixed
     # (due to sorting randomly in case of same element)
 
     # TODO: check if this runs on cpu
     batch_ctx = torch.cat([batch_protein, batch_ligand], dim=0)
     # sort_idx = batch_ctx.argsort()
-    sort_idx = torch.sort(batch_ctx, stable=True).indices
+    sort_idx = torch.sort(batch_ctx, stable=True).indices # get sorted batch's idx in unsorted batch
 
     mask_ligand = torch.cat([
         torch.zeros([batch_protein.size(0)], device=batch_protein.device).bool(),
