@@ -182,7 +182,10 @@ class CondMolGenMetric(object):
             isnan = np.isnan(arr)
             n_isnan = isnan.sum()
             arr2 = arr[~isnan]
-            return {f"{name}_fail": n_isnan / n_total, f"{name}_mean": np.mean(arr2)}
+            if self.use_RL:
+                return {f"{name}_fail": n_isnan / n_total, f"{name}_mean": np.mean(arr2), f"{name}_median": np.median(arr2), f"{name}_list": arr2.tolist()}
+            else:
+                return {f"{name}_fail": n_isnan / n_total, f"{name}_mean": np.mean(arr2)}
 
         results = BasicResults("bfn", "molcraft", generated)
 
@@ -234,8 +237,6 @@ class CondMolGenMetric(object):
             try:
                 vina_score = res["vina"]["score_only"][0]["affinity"]
                 vina_min = res["vina"]["minimize"][0]["affinity"]
-                print("res.keys: ", res.keys())
-                print("vina_score: ", vina_score)
                 if vina_score > 0 or vina_min > 0:
                     if ligand_filename not in pos_vina_msg:
                         pos_vina_msg[ligand_filename] = ""

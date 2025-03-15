@@ -525,6 +525,18 @@ class BFN4SBDDScoreModel(BFNBase):
 
             # debug only
             # mu_coord_gt, gamma_coord_gt = self.continuous_var_bayesian_update(t, sigma1=self.sigma1_coord, x=ligand_pos)
+            print("protein_pos: ", protein_pos.shape, protein_pos.mean())
+            print("protein_v: ", protein_v.shape, protein_v.mean())
+            # 修改dtype为float32
+            print(
+                "batch_protein: ",
+                batch_protein.shape,
+                batch_protein.to(torch.float32).mean(),
+            )
+            print("batch_ligand: ", batch_ligand.shape, batch_ligand)
+            print("theta_h_t: ", theta_h_t.shape, theta_h_t.mean())
+            print("mu_pos_t: ", mu_pos_t.shape, mu_pos_t.mean())
+            print("gamma_coord: ", gamma_coord.shape, gamma_coord.mean())
 
             coord_pred, p0_h_pred, k_hat = (
                 self.interdependency_modeling(  # k_hat = zeros(no used)
@@ -543,6 +555,8 @@ class BFN4SBDDScoreModel(BFNBase):
                     # gamma_charge=gamma_charge,
                 )
             )
+            print("t: ", t.mean())
+            print("coord_pred: ", coord_pred[0])
 
             # debug only
             # if i % (sample_steps // 10) == 0:
@@ -725,6 +739,8 @@ class BFN4SBDDScoreModel(BFNBase):
             gamma_coord=1 - self.sigma1_coord**2,  # γ(t) = 1 − (σ1**2) ** t
             # gamma_charge=1 - self.sigma1_charges**2,
         )
+        print("mu_pos_final: ", mu_pos_final[0], mu_pos_final.shape)
+        print("p0_h_final: ", p0_h_final[0], p0_h_final.shape)
         # TODO delete the following condition
         if not torch.all(p0_h_final.isfinite()):
             p0_h_final = torch.where(
@@ -856,10 +872,6 @@ class BFN4SBDDScoreModel(BFNBase):
             # output_params = Ψ(θ,t), x_hat or e_hat for output distribution
             # continuous x ~ δ(x − x_hat(θ, t))
             # discrete k^(d) ~ softmax(Ψ^(d)(θ, t))_k
-
-            # debug only
-            # mu_coord_gt, gamma_coord_gt = self.continuous_var_bayesian_update(t, sigma1=self.sigma1_coord, x=ligand_pos)
-
             coord_pred, p0_h_pred, k_hat = (
                 self.interdependency_modeling(  # k_hat = zeros(no used)
                     time=t,
@@ -995,6 +1007,8 @@ class BFN4SBDDScoreModel(BFNBase):
             gamma_coord=1 - self.sigma1_coord**2,  # γ(t) = 1 − (σ1**2) ** t
             # gamma_charge=1 - self.sigma1_charges**2,
         )
+        # print("mu_pos_final: ", mu_pos_final[0], mu_pos_final.shape)
+        # print("p0_h_final: ", p0_h_final[0], p0_h_final.shape)
         # TODO delete the following condition
         if not torch.all(p0_h_final.isfinite()):
             p0_h_final = torch.where(
@@ -1012,4 +1026,4 @@ class BFN4SBDDScoreModel(BFNBase):
 
         sample_traj.append((mu_pos_final, k_final, k_hat_final))
 
-        return theta_traj, sample_traj, y_traj
+        return m_hat_traj, sample_traj

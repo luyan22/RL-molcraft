@@ -511,6 +511,32 @@ class DockingTestCallback(Callback):
             trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
         )
         self.outputs.extend(outputs)
+        # results, recon_dict = reconstruct_mol_and_filter_invalid(self.outputs)
+        # print("recon_dict: ", recon_dict)
+
+        # if len(results) == 0:
+        #     print('skip validation, no mols are valid & complete')
+        #     return
+
+        # path = pl_module.cfg.accounting.test_outputs_dir
+        # timestr = time.strftime("%Y%m%d-%H%M%S")
+        # path = os.path.join(path, timestr)
+        # if not os.path.exists(path):
+        #     os.makedirs(path, exist_ok=True)
+
+        # bad_case_dir = os.path.join(path, 'bad_cases')
+        # print(f'bad cases dumped to {bad_case_dir}')
+
+        # out_metrics = self.metric.evaluate(results, bad_case_dir)
+        # out_metrics.update(recon_dict)
+        # out_metrics = {f'test/{k}': v for k, v in out_metrics.items()}
+        # pl_module.log_dict(out_metrics)
+
+        # out_metrics['ckpt_path'] = pl_module.cfg.evaluation.ckpt_path
+        # out_metrics['test_outputs_dir'] = path
+        # out_metrics['sample_num_atoms'] = pl_module.cfg.evaluation.sample_num_atoms
+        # print(json.dumps(out_metrics, indent=4))
+        # stop
 
     def on_test_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
         super().on_test_start(trainer, pl_module)

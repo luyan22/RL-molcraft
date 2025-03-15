@@ -96,7 +96,10 @@ class SBDDTrainLoop(pl.LightningModule):
             0, batch_ligand
         )  # different t for different molecules.
 
-        if not self.cfg.dynamics.use_discrete_t and not self.cfg.dynamics.destination_prediction:
+        if (
+            not self.cfg.dynamics.use_discrete_t
+            and not self.cfg.dynamics.destination_prediction
+        ):
             # t = torch.randint(0, 999, [num_graphs, 1], dtype=ligand_pos.dtype, device=ligand_pos.device).index_select(0, batch_ligand) #different t for different molecules.
             # t = t / 1000.0
             # else:
@@ -115,13 +118,15 @@ class SBDDTrainLoop(pl.LightningModule):
 
         # here the discretised_loss is close for current version.
 
-        loss = torch.mean(c_loss + self.cfg.train.v_loss_weight * d_loss + discretised_loss)
+        loss = torch.mean(
+            c_loss + self.cfg.train.v_loss_weight * d_loss + discretised_loss
+        )
 
         t5 = time()
         self.log_dict(
             {
-                'lr': self.get_last_lr(),
-                'loss': loss.item(),
+                "lr": self.get_last_lr(),
+                "loss": loss.item(),
             },
             on_step=True,
             prog_bar=True,
@@ -129,9 +134,9 @@ class SBDDTrainLoop(pl.LightningModule):
         )
         self.log_dict(
             {
-                'loss_pos': c_loss.mean().item(), 
-                'loss_type': d_loss.mean().item(),
-                'loss_c_ratio': c_loss.mean().item() / loss.item(),
+                "loss_pos": c_loss.mean().item(),
+                "loss_type": d_loss.mean().item(),
+                "loss_c_ratio": c_loss.mean().item() / loss.item(),
             },
             on_step=True,
             prog_bar=False,
@@ -147,36 +152,50 @@ class SBDDTrainLoop(pl.LightningModule):
 
         if self.log_time:
             self.time_records = np.vstack((self.time_records, [t0, t1, t2, t3, t4, t5]))
-            print(f'step total time: {self.time_records[-1, 0] - self.time_records[-1, 1]}, batch size: {num_graphs}')
-            print(f'\tpl call & data access: {self.time_records[-1, 1] - self.time_records[-2, 0]}')
-            print(f'\tunwrap data: {self.time_records[-1, 2] - self.time_records[-1, 1]}')
-            print(f'\tadd noise & center pos: {self.time_records[-1, 3] - self.time_records[-1, 2]}')
-            print(f'\tsample t: {self.time_records[-1, 4] - self.time_records[-1, 3]}')
-            print(f'\tget loss: {self.time_records[-1, 5] - self.time_records[-1, 4]}')
-            print(f'\tlogging: {self.time_records[-1, 0] - self.time_records[-1, 5]}')
+            print(
+                f"step total time: {self.time_records[-1, 0] - self.time_records[-1, 1]}, batch size: {num_graphs}"
+            )
+            print(
+                f"\tpl call & data access: {self.time_records[-1, 1] - self.time_records[-2, 0]}"
+            )
+            print(
+                f"\tunwrap data: {self.time_records[-1, 2] - self.time_records[-1, 1]}"
+            )
+            print(
+                f"\tadd noise & center pos: {self.time_records[-1, 3] - self.time_records[-1, 2]}"
+            )
+            print(f"\tsample t: {self.time_records[-1, 4] - self.time_records[-1, 3]}")
+            print(f"\tget loss: {self.time_records[-1, 5] - self.time_records[-1, 4]}")
+            print(f"\tlogging: {self.time_records[-1, 0] - self.time_records[-1, 5]}")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        out_data_list = self.shared_sampling_step(batch, batch_idx, sample_num_atoms='ref', desc=f'Val')
+        out_data_list = self.shared_sampling_step(
+            batch, batch_idx, sample_num_atoms="ref", desc=f"Val"
+        )
         return out_data_list
-    
+
     def test_step(self, batch, batch_idx):
         # TODO change order, samples of the same pocket should be together, reduce protein loading
         out_data_list = []
         n_samples = self.cfg.evaluation.num_samples
         for _ in range(n_samples):
-            batch_output = self.shared_sampling_step(batch, batch_idx, sample_num_atoms=self.cfg.evaluation.sample_num_atoms, 
-                                                     desc=f'Test-{_}/{n_samples}')
+            batch_output = self.shared_sampling_step(
+                batch,
+                batch_idx,
+                sample_num_atoms=self.cfg.evaluation.sample_num_atoms,
+                desc=f"Test-{_}/{n_samples}",
+            )
             # for idx, item in enumerate(batch_output):
             out_data_list.append(batch_output)
-                
+
         out_data_list_reorder = []
         for i in range(len(out_data_list[0])):
             for j in range(len(out_data_list)):
                 out_data_list_reorder.append(out_data_list[j][i])
         return out_data_list_reorder
 
-    def shared_sampling_step(self, batch, batch_idx, sample_num_atoms, desc=''):
+    def shared_sampling_step(self, batch, batch_idx, sample_num_atoms, desc=""):
         # here we need to sample the molecules in the validation step
         protein_pos, protein_v, batch_protein, ligand_pos, ligand_v, batch_ligand = (
             batch.protein_pos,
@@ -188,8 +207,11 @@ class SBDDTrainLoop(pl.LightningModule):
         )
         num_graphs = batch_protein.max().item() + 1  # B
         n_nodes = batch_ligand.size(0)  # N_lig
-        assert num_graphs == len(batch), f"num_graphs: {num_graphs} != len(batch): {len(batch)}"
+        assert num_graphs == len(
+            batch
+        ), f"num_graphs: {num_graphs} != len(batch): {len(batch)}"
 
+        print("protein_pre_pos: ", protein_pos.shape, protein_pos.mean())
         # move protein center to origin & ligand correspondingly
         protein_pos, ligand_pos, offset = center_pos(
             protein_pos,
@@ -198,25 +220,42 @@ class SBDDTrainLoop(pl.LightningModule):
             batch_ligand,
             mode=self.cfg.dynamics.center_pos_mode,
         )  # TODO: ugly
+        print("protein_pos: ", protein_pos.shape, protein_pos.mean())
+        assert (
+            sample_num_atoms == "prior"
+        ), f"sample_num_atoms mode: {sample_num_atoms} not supported"
 
         # determine the number of atoms in the ligand
-        if sample_num_atoms == 'prior':
+        if sample_num_atoms == "prior":
             ligand_num_atoms = []
             for data_id in range(len(batch)):
                 data = batch[data_id]
-                pocket_size = atom_num.get_space_size(data.protein_pos.detach().cpu().numpy() * self.cfg.data.normalizer_dict.pos)
-                ligand_num_atoms.append(atom_num.sample_atom_num(pocket_size).astype(int))
-            batch_ligand = torch.repeat_interleave(torch.arange(len(batch)), torch.tensor(ligand_num_atoms)).to(ligand_pos.device)
-            ligand_num_atoms = torch.tensor(ligand_num_atoms, dtype=torch.long, device=ligand_pos.device)
-        elif sample_num_atoms == 'ref':
+                pocket_size = atom_num.get_space_size(
+                    data.protein_pos.detach().cpu().numpy()
+                    * self.cfg.data.normalizer_dict.pos
+                )
+                ligand_num_atoms.append(
+                    atom_num.sample_atom_num(pocket_size).astype(int)
+                )
+            batch_ligand = torch.repeat_interleave(
+                torch.arange(len(batch)), torch.tensor(ligand_num_atoms)
+            ).to(ligand_pos.device)
+            ligand_num_atoms = torch.tensor(
+                ligand_num_atoms, dtype=torch.long, device=ligand_pos.device
+            )
+        elif sample_num_atoms == "ref":
             batch_ligand = batch.ligand_element_batch
-            ligand_num_atoms = scatter_sum(torch.ones_like(batch_ligand), batch_ligand, dim=0).to(ligand_pos.device)
+            ligand_num_atoms = scatter_sum(
+                torch.ones_like(batch_ligand), batch_ligand, dim=0
+            ).to(ligand_pos.device)
         else:
             raise ValueError(f"sample_num_atoms mode: {sample_num_atoms} not supported")
-        ligand_cum_atoms = torch.cat([
-            torch.tensor([0], dtype=torch.long, device=ligand_pos.device), 
-            ligand_num_atoms.cumsum(dim=0)
-        ])
+        ligand_cum_atoms = torch.cat(
+            [
+                torch.tensor([0], dtype=torch.long, device=ligand_pos.device),
+                ligand_num_atoms.cumsum(dim=0),
+            ]
+        )
 
         # TODO reuse for visualization and test
         # forward pass to get the ligand sample
@@ -231,6 +270,17 @@ class SBDDTrainLoop(pl.LightningModule):
             # ligand_pos=ligand_pos,  # for debug only
             desc=desc,
         )
+        # _, sample_chain = self.dynamics.sample_chain(
+        #     protein_pos=protein_pos,
+        #     protein_v=protein_v,
+        #     batch_protein=batch_protein,
+        #     batch_ligand=batch_ligand,
+        #     # n_nodes=n_nodes,
+        #     sample_steps=self.cfg.evaluation.sample_steps,
+        #     n_nodes=num_graphs,
+        #     # ligand_pos=ligand_pos,  # for debug only
+        #     desc=desc,
+        # )
 
         # restore ligand to original position
         final = sample_chain[-1]  # mu_pos_final, k_final, k_hat_final
@@ -238,34 +288,46 @@ class SBDDTrainLoop(pl.LightningModule):
 
         # along with normalizer
         pred_pos = pred_pos * torch.tensor(
-            self.cfg.data.normalizer_dict.pos, dtype=torch.float32, device=ligand_pos.device
+            self.cfg.data.normalizer_dict.pos,
+            dtype=torch.float32,
+            device=ligand_pos.device,
         )
         out_batch = copy.deepcopy(batch)
         out_batch.protein_pos = out_batch.protein_pos * torch.tensor(
-            self.cfg.data.normalizer_dict.pos, dtype=torch.float32, device=ligand_pos.device
+            self.cfg.data.normalizer_dict.pos,
+            dtype=torch.float32,
+            device=ligand_pos.device,
         )
 
         pred_v = one_hot.argmax(dim=-1)
         # TODO: ugly, should be done in metrics.py (but needs a way to make it compatible with pyg batch)
         pred_atom_type = trans.get_atomic_number_from_index(
             pred_v, mode=self.cfg.data.transform.ligand_atom_mode
-        ) # List[int]
+        )  # List[int]
 
         # for visualization
-        atom_type = [trans.MAP_ATOM_TYPE_ONLY_TO_INDEX[i] for i in pred_atom_type]  # List[int]
-        atom_type = torch.tensor(atom_type, dtype=torch.long, device=ligand_pos.device)  # [N_lig]
+        atom_type = [
+            trans.MAP_ATOM_TYPE_ONLY_TO_INDEX[i] for i in pred_atom_type
+        ]  # List[int]
+        atom_type = torch.tensor(
+            atom_type, dtype=torch.long, device=ligand_pos.device
+        )  # [N_lig]
 
         # for reconstruction
         pred_aromatic = trans.is_aromatic_from_index(
             pred_v, mode=self.cfg.data.transform.ligand_atom_mode
-        ) # List[bool]
+        )  # List[bool]
 
         # print('[DEBUG]', num_graphs, len(ligand_cum_atoms))
-        
+
         # add necessary dict to new pyg batch
         out_batch.x, out_batch.pos = atom_type, pred_pos
-        out_batch.atom_type = torch.tensor(pred_atom_type, dtype=torch.long, device=ligand_pos.device)
-        out_batch.is_aromatic = torch.tensor(pred_aromatic, dtype=torch.long, device=ligand_pos.device)
+        out_batch.atom_type = torch.tensor(
+            pred_atom_type, dtype=torch.long, device=ligand_pos.device
+        )
+        out_batch.is_aromatic = torch.tensor(
+            pred_aromatic, dtype=torch.long, device=ligand_pos.device
+        )
         # out_batch.mol = results
 
         _slice_dict = {
@@ -276,7 +338,9 @@ class SBDDTrainLoop(pl.LightningModule):
             # "mol": out_batch._slice_dict["ligand_filename"],
         }
         _inc_dict = {
-            "x": out_batch._inc_dict["ligand_element"], # [0] * B, TODO: figure out what this is
+            "x": out_batch._inc_dict[
+                "ligand_element"
+            ],  # [0] * B, TODO: figure out what this is
             "pos": out_batch._inc_dict["ligand_pos"],
             "atom_type": out_batch._inc_dict["ligand_element"],
             "is_aromatic": out_batch._inc_dict["ligand_element"],
@@ -305,6 +369,6 @@ class SBDDTrainLoop(pl.LightningModule):
         self.scheduler, self.get_last_lr = get_scheduler(self.cfg.train, self.optim)
 
         return {
-            'optimizer': self.optim, 
-            'lr_scheduler': self.scheduler,
+            "optimizer": self.optim,
+            "lr_scheduler": self.scheduler,
         }
